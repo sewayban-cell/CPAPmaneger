@@ -12,10 +12,16 @@ export enum MachineModel {
   RESMED = 'Resmed'
 }
 
+export enum MachineCategory {
+  NEW = '新機',
+  RENTAL_UNIT = '租賃機'
+}
+
 export interface MachineRecord {
   id: string;
   serialNumber: string;
   model: MachineModel;
+  category: MachineCategory;
   status: MachineStatus;
   statusDate: string;
   patientName?: string;

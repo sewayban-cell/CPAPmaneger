@@ -1,6 +1,6 @@
 
 import React, { useState, useRef } from 'react';
-import { MachineStatus, MachineRecord, MachineModel } from '../types.ts';
+import { MachineStatus, MachineRecord, MachineModel, MachineCategory } from '../types.ts';
 import { recognizeSerialNumber } from '../services/geminiService.ts';
 
 interface MachineFormProps {
@@ -12,6 +12,7 @@ interface MachineFormProps {
 const MachineForm: React.FC<MachineFormProps> = ({ initialData, onSave, onCancel }) => {
   const [sn, setSn] = useState(initialData?.serialNumber || '');
   const [model, setModel] = useState<MachineModel>(initialData?.model || MachineModel.FP);
+  const [category, setCategory] = useState<MachineCategory>(initialData?.category || MachineCategory.NEW);
   const [status, setStatus] = useState<MachineStatus>(initialData?.status || MachineStatus.IN_STOCK);
   const [date, setDate] = useState(initialData?.statusDate || new Date().toISOString().split('T')[0]);
   const [patient, setPatient] = useState(initialData?.patientName || '');
@@ -63,6 +64,7 @@ const MachineForm: React.FC<MachineFormProps> = ({ initialData, onSave, onCancel
       id: initialData?.id || (crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).substring(2, 9) + Date.now().toString(36)),
       serialNumber: sn.trim().toUpperCase(),
       model,
+      category,
       status,
       statusDate: date,
       patientName: needsPatientInfo ? patient.trim() : undefined,
@@ -82,10 +84,27 @@ const MachineForm: React.FC<MachineFormProps> = ({ initialData, onSave, onCancel
           </button>
         </div>
 
-        <div className="p-6 space-y-5 overflow-y-auto flex-1">
+        <div className="p-6 space-y-5 overflow-y-auto flex-1 text-left">
+          {/* Machine Category Selection */}
+          <div className="space-y-2">
+            <label className="text-xs font-black text-slate-500 uppercase">機器類別</label>
+            <div className="grid grid-cols-2 gap-2">
+              {Object.values(MachineCategory).map(c => (
+                <button
+                  key={c}
+                  type="button"
+                  onClick={() => setCategory(c)}
+                  className={`py-2 rounded-xl border-2 font-black text-sm transition-all ${category === c ? 'bg-indigo-600 text-white border-indigo-600 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-200'}`}
+                >
+                  {c}
+                </button>
+              ))}
+            </div>
+          </div>
+
           {/* Machine Model Selection */}
           <div className="space-y-2">
-            <label className="text-xs font-black text-slate-500 uppercase">機器型號</label>
+            <label className="text-xs font-black text-slate-500 uppercase">品牌型號</label>
             <div className="grid grid-cols-3 gap-2">
               {Object.values(MachineModel).map(m => (
                 <button
@@ -115,7 +134,7 @@ const MachineForm: React.FC<MachineFormProps> = ({ initialData, onSave, onCancel
             <label className="text-xs font-black text-slate-500 uppercase">狀態</label>
             <div className="grid grid-cols-2 gap-2">
               {Object.values(MachineStatus).map(s => (
-                <button key={s} type="button" onClick={() => setStatus(s)} className={`py-2.5 rounded-xl border-2 font-black text-sm transition-all ${status === s ? 'bg-blue-600 text-white border-blue-600 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:border-blue-200'}`}>{s}</button>
+                <button key={s} type="button" onClick={() => setStatus(s)} className={`py-2.5 rounded-xl border-2 font-black text-sm transition-all ${status === s ? 'bg-emerald-600 text-white border-emerald-600 shadow-md' : 'bg-white text-slate-600 border-slate-200 hover:border-emerald-200'}`}>{s}</button>
               ))}
             </div>
           </div>

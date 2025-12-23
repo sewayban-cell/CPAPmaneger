@@ -1,6 +1,6 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { MachineRecord, MachineStatus, MachineModel } from './types.ts';
+import { MachineRecord, MachineStatus, MachineModel, MachineCategory } from './types.ts';
 import MachineCard from './components/MachineCard.tsx';
 import MachineForm from './components/MachineForm.tsx';
 import * as XLSX from 'xlsx';
@@ -58,11 +58,12 @@ const App: React.FC = () => {
       const ptMatch = (m.patientName || '').toLowerCase().includes(q);
       const phMatch = (m.phoneNumber || '').toLowerCase().includes(q);
       const modelMatch = m.model.toLowerCase().includes(q);
+      const categoryMatch = m.category.toLowerCase().includes(q);
       
       const dateInRange = (!startDate || m.statusDate >= startDate) && 
                           (!endDate || m.statusDate <= endDate);
 
-      return (snMatch || ptMatch || phMatch || modelMatch) && 
+      return (snMatch || ptMatch || phMatch || modelMatch || categoryMatch) && 
              (statusFilter === 'all' || m.status === statusFilter) &&
              dateInRange;
     });
@@ -97,9 +98,16 @@ const App: React.FC = () => {
     setEditingItem(undefined);
   };
 
+  const handleDelete = (id: string) => {
+    if (window.confirm('確定要刪除這筆紀錄嗎？刪除後無法復原。')) {
+      setMachines(prev => prev.filter(m => m.id !== id));
+    }
+  };
+
   const exportExcel = () => {
     const data = filteredAndSorted.map(m => ({
       '序號': m.serialNumber,
+      '類別': m.category,
       '型號': m.model,
       '狀態': m.status,
       '日期': m.statusDate,
@@ -149,7 +157,7 @@ const App: React.FC = () => {
               <div className="relative flex-1">
                 <input 
                   type="text" 
-                  placeholder="搜尋序號、個案、型號或電話..." 
+                  placeholder="搜尋序號、個案、型號、類別或電話..." 
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
                   className="w-full pl-10 pr-4 py-3 bg-white border border-slate-300 rounded-xl outline-none focus:ring-2 focus:ring-blue-500 font-bold"
@@ -205,7 +213,12 @@ const App: React.FC = () => {
 
         <section className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {filteredAndSorted.map(m => (
-            <MachineCard key={m.id} machine={m} onEdit={(record) => { setEditingItem(record); setIsFormOpen(true); }} />
+            <MachineCard 
+              key={m.id} 
+              machine={m} 
+              onEdit={(record) => { setEditingItem(record); setIsFormOpen(true); }} 
+              onDelete={handleDelete}
+            />
           ))}
         </section>
       </main>
