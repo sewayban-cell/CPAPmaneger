@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MachineRecord, STATUS_COLORS } from '../types';
+import { MachineRecord, STATUS_COLORS } from '../types.ts';
 
 interface MachineCardProps {
   machine: MachineRecord;

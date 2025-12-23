@@ -1,7 +1,7 @@
 
 import React, { useState, useRef } from 'react';
-import { MachineStatus, MachineRecord, MachineModel } from '../types';
-import { recognizeSerialNumber } from '../services/geminiService';
+import { MachineStatus, MachineRecord, MachineModel } from '../types.ts';
+import { recognizeSerialNumber } from '../services/geminiService.ts';
 
 interface MachineFormProps {
   initialData?: MachineRecord;

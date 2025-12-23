@@ -1,8 +1,8 @@
 
 import React, { useState, useEffect, useMemo } from 'react';
-import { MachineRecord, MachineStatus, MachineModel } from './types';
-import MachineCard from './components/MachineCard';
-import MachineForm from './components/MachineForm';
+import { MachineRecord, MachineStatus, MachineModel } from './types.ts';
+import MachineCard from './components/MachineCard.tsx';
+import MachineForm from './components/MachineForm.tsx';
 import * as XLSX from 'xlsx';
 
 type SortOption = 'newest' | 'serial' | 'status' | 'date';
