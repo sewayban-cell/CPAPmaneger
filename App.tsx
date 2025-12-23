@@ -18,14 +18,25 @@ const App: React.FC = () => {
   const [sortOption, setSortOption] = useState<SortOption>('newest');
   const [isReady, setIsReady] = useState(false);
 
-  // 初始化讀取
+  // 初始化讀取，加入強大的容錯處理
   useEffect(() => {
     const saved = localStorage.getItem('sleep_db_v4');
     if (saved) {
       try {
-        setMachines(JSON.parse(saved));
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          // 資料轉化：確保舊資料也能相容新欄位
+          const normalized = parsed.map(m => ({
+            ...m,
+            category: m.category || MachineCategory.NEW,
+            accessories: m.accessories || [],
+            status: m.status || MachineStatus.IN_STOCK
+          }));
+          setMachines(normalized);
+        }
       } catch (e) {
-        console.error("資料解析失敗", e);
+        console.error("資料解析失敗，已重置", e);
+        setMachines([]);
       }
     }
     setIsReady(true);
@@ -33,7 +44,7 @@ const App: React.FC = () => {
 
   // 資料持久化
   useEffect(() => {
-    if (isReady) {
+    if (isReady && Array.isArray(machines)) {
       localStorage.setItem('sleep_db_v4', JSON.stringify(machines));
     }
   }, [machines, isReady]);
@@ -45,23 +56,28 @@ const App: React.FC = () => {
       [MachineStatus.RENTAL]: 0,
       [MachineStatus.PURCHASED]: 0,
     };
+    if (!Array.isArray(machines)) return Object.entries(counts).map(([name, value]) => ({ name, value }));
+    
     machines.forEach(m => {
-      if (counts[m.status] !== undefined) counts[m.status]++;
+      if (m && m.status && counts[m.status] !== undefined) counts[m.status]++;
     });
     return Object.entries(counts).map(([name, value]) => ({ name, value }));
   }, [machines]);
 
   const filteredAndSorted = useMemo(() => {
-    let result = [...machines].filter(m => {
+    if (!Array.isArray(machines)) return [];
+    
+    let result = machines.filter(m => {
+      if (!m) return false;
       const q = search.toLowerCase();
-      const snMatch = m.serialNumber.toLowerCase().includes(q);
+      const snMatch = (m.serialNumber || '').toLowerCase().includes(q);
       const ptMatch = (m.patientName || '').toLowerCase().includes(q);
       const phMatch = (m.phoneNumber || '').toLowerCase().includes(q);
-      const modelMatch = m.model.toLowerCase().includes(q);
-      const categoryMatch = m.category.toLowerCase().includes(q);
+      const modelMatch = (m.model || '').toLowerCase().includes(q);
+      const categoryMatch = (m.category || '').toLowerCase().includes(q);
       
-      const dateInRange = (!startDate || m.statusDate >= startDate) && 
-                          (!endDate || m.statusDate <= endDate);
+      const dateInRange = (!startDate || (m.statusDate && m.statusDate >= startDate)) && 
+                          (!endDate || (m.statusDate && m.statusDate <= endDate));
 
       return (snMatch || ptMatch || phMatch || modelMatch || categoryMatch) && 
              (statusFilter === 'all' || m.status === statusFilter) &&
@@ -70,10 +86,10 @@ const App: React.FC = () => {
 
     result.sort((a, b) => {
       switch (sortOption) {
-        case 'serial': return a.serialNumber.localeCompare(b.serialNumber);
-        case 'status': return a.status.localeCompare(b.status);
-        case 'date': return b.statusDate.localeCompare(a.statusDate);
-        default: return new Date(b.lastUpdated).getTime() - new Date(a.lastUpdated).getTime();
+        case 'serial': return (a.serialNumber || '').localeCompare(b.serialNumber || '');
+        case 'status': return (a.status || '').localeCompare(b.status || '');
+        case 'date': return (b.statusDate || '').localeCompare(a.statusDate || '');
+        default: return new Date(b.lastUpdated || 0).getTime() - new Date(a.lastUpdated || 0).getTime();
       }
     });
     return result;
@@ -81,18 +97,18 @@ const App: React.FC = () => {
 
   const handleSave = (record: MachineRecord) => {
     setMachines(prev => {
-      const index = prev.findIndex(m => m.id === record.id);
+      const safePrev = Array.isArray(prev) ? prev : [];
+      const index = safePrev.findIndex(m => m.id === record.id);
       if (index > -1) {
-        const next = [...prev];
+        const next = [...safePrev];
         next[index] = record;
         return next;
       }
-      // 防止重複序號
-      if (prev.some(m => m.serialNumber === record.serialNumber)) {
+      if (safePrev.some(m => m.serialNumber === record.serialNumber)) {
         alert('此序號已存在系統中！');
-        return prev;
+        return safePrev;
       }
-      return [record, ...prev];
+      return [record, ...safePrev];
     });
     setIsFormOpen(false);
     setEditingItem(undefined);
@@ -100,7 +116,7 @@ const App: React.FC = () => {
 
   const handleDelete = (id: string) => {
     if (window.confirm('確定要刪除這筆紀錄嗎？刪除後無法復原。')) {
-      setMachines(prev => prev.filter(m => m.id !== id));
+      setMachines(prev => (Array.isArray(prev) ? prev.filter(m => m.id !== id) : []));
     }
   };
 
@@ -113,7 +129,7 @@ const App: React.FC = () => {
       '日期': m.statusDate,
       '個案': m.patientName || '',
       '電話': m.phoneNumber || '',
-      '配件': m.accessories.join(', '),
+      '配件': (m.accessories || []).join(', '),
       '更新時間': new Date(m.lastUpdated).toLocaleString()
     }));
     const ws = XLSX.utils.json_to_sheet(data);
@@ -121,6 +137,8 @@ const App: React.FC = () => {
     XLSX.utils.book_append_sheet(wb, ws, "Inventory");
     XLSX.writeFile(wb, `SleepInventory_${new Date().toISOString().split('T')[0]}.xlsx`);
   };
+
+  if (!isReady) return <div className="min-h-screen bg-slate-50 flex items-center justify-center font-black text-slate-400">系統載入中...</div>;
 
   return (
     <div className="min-h-screen bg-slate-50 flex flex-col font-sans pb-20">

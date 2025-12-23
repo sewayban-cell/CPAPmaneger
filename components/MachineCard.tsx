@@ -1,6 +1,6 @@
 
 import React from 'react';
-import { MachineRecord, STATUS_COLORS, MachineCategory } from '../types.ts';
+import { MachineRecord, STATUS_COLORS, MachineCategory, MachineStatus } from '../types.ts';
 
 interface MachineCardProps {
   machine: MachineRecord;
@@ -9,6 +9,8 @@ interface MachineCardProps {
 }
 
 const MachineCard: React.FC<MachineCardProps> = ({ machine, onEdit, onDelete }) => {
+  if (!machine) return null;
+
   const handleEdit = (e: React.MouseEvent) => {
     e.preventDefault();
     e.stopPropagation();
@@ -21,6 +23,9 @@ const MachineCard: React.FC<MachineCardProps> = ({ machine, onEdit, onDelete }) 
     onDelete(machine.id);
   };
 
+  // 安全獲取顏色，防止狀態不匹配
+  const statusColorClass = (STATUS_COLORS as any)[machine.status] || STATUS_COLORS[MachineStatus.IN_STOCK];
+
   return (
     <div 
       className="bg-white border border-slate-200 rounded-3xl p-5 hover:shadow-xl transition-all flex flex-col relative overflow-hidden group min-h-[220px] cursor-pointer"
@@ -30,18 +35,18 @@ const MachineCard: React.FC<MachineCardProps> = ({ machine, onEdit, onDelete }) 
       <div className="flex justify-between items-start mb-4">
         <div className="text-left">
           <div className="flex flex-wrap items-center gap-2 mb-2">
-            <span className={`px-3 py-1 rounded-full text-[10px] font-black border-2 shadow-sm ${STATUS_COLORS[machine.status]}`}>
-              {machine.status}
+            <span className={`px-3 py-1 rounded-full text-[10px] font-black border-2 shadow-sm ${statusColorClass}`}>
+              {machine.status || '未知'}
             </span>
             <span className="bg-slate-800 text-white px-2 py-0.5 rounded-lg text-[10px] font-black">
-              {machine.model}
+              {machine.model || '未定'}
             </span>
-            <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black border ${machine.category === MachineCategory.NEW ? 'bg-indigo-50 text-indigo-600 border-indigo-100' : 'bg-orange-50 text-orange-600 border-orange-100'}`}>
-              {machine.category}
+            <span className={`px-2 py-0.5 rounded-lg text-[10px] font-black border ${machine.category === MachineCategory.RENTAL_UNIT ? 'bg-orange-50 text-orange-600 border-orange-100' : 'bg-indigo-50 text-indigo-600 border-indigo-100'}`}>
+              {machine.category || MachineCategory.NEW}
             </span>
           </div>
           <h3 className="text-lg font-black text-slate-800 font-mono break-all leading-tight">
-            {machine.serialNumber}
+            {machine.serialNumber || '無序號'}
           </h3>
         </div>
         <div className="flex gap-1 shrink-0">
@@ -66,7 +71,7 @@ const MachineCard: React.FC<MachineCardProps> = ({ machine, onEdit, onDelete }) 
       <div className="space-y-4 flex-1 text-left">
         <div className="flex items-center gap-2 text-xs text-slate-500 font-bold">
           <svg className="w-4 h-4 text-slate-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/></svg>
-          {machine.statusDate}
+          {machine.statusDate || '--'}
         </div>
         
         {machine.patientName && (
@@ -84,7 +89,7 @@ const MachineCard: React.FC<MachineCardProps> = ({ machine, onEdit, onDelete }) 
           </div>
         )}
 
-        {machine.accessories.length > 0 && (
+        {(machine.accessories && machine.accessories.length > 0) && (
           <div className="flex flex-wrap gap-1.5">
             {machine.accessories.slice(0, 3).map((acc, i) => (
               <span key={i} className="bg-white px-2 py-0.5 rounded-lg border border-slate-200 text-[9px] text-slate-500 font-black shadow-sm">

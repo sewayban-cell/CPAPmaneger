@@ -2,12 +2,20 @@
 import { GoogleGenAI } from "@google/genai";
 
 export const recognizeSerialNumber = async (base64Image: string): Promise<string> => {
-  // 安全性檢查：確保 process 與 process.env 存在
-  const apiKey = typeof process !== 'undefined' && process.env ? process.env.API_KEY : '';
+  // 動態獲取，確保代碼執行到這裡時環境變數已就緒
+  const getApiKey = () => {
+    try {
+      return (process as any).env.API_KEY || "";
+    } catch (e) {
+      return "";
+    }
+  };
+
+  const apiKey = getApiKey();
   
   if (!apiKey) {
-    console.error("API Key 未定義，OCR 功能將失效。");
-    throw new Error("系統未配置 API Key，請聯繫管理員。");
+    console.warn("API Key 未配置");
+    throw new Error("系統未配置 API Key，請檢查環境變數。");
   }
 
   const ai = new GoogleGenAI({ apiKey });
@@ -33,9 +41,10 @@ export const recognizeSerialNumber = async (base64Image: string): Promise<string
       }
     });
 
-    return response.text?.trim() || "";
+    const text = response.text;
+    return text ? text.trim() : "";
   } catch (error) {
     console.error("Gemini OCR Error:", error);
-    throw new Error("OCR 辨識失敗，請手動輸入。");
+    throw new Error("OCR 辨識失敗，請嘗試手動輸入。");
   }
 };
