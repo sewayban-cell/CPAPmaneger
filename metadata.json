@@ -1,0 +1,7 @@
+{
+  "name": "睡眠機序號管理",
+  "description": "A professional tool for tracking sleep machine serial numbers with AI-powered photo recognition, status management, and patient record linking.",
+  "requestFramePermissions": [
+    "camera"
+  ]
+}
